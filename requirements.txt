@@ -1,0 +1,14 @@
+opencv-python
+fer
+matplotlib
+numpy
+pandas
+scikit-learn
+joblib
+tqdm
+reportlab
+streamlit
+Pillow
+torch
+transformers
+torchvision
