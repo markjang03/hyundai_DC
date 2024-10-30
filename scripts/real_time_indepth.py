@@ -1,4 +1,4 @@
-# scripts/real_time_analysis.py
+# scripts/real_time_indepth.py
 
 import cv2
 from fer import FER
@@ -10,13 +10,28 @@ import matplotlib.pyplot as plt
 import warnings
 import numpy as np
 import mediapipe as mp
+import logging
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("real_time_indepth")
 
 # 경고 메시지 무시 (선택 사항)
 warnings.filterwarnings("ignore")
 
 # Mediapipe 초기화
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True)
+face_mesh = mp_face_mesh.FaceMesh(
+    static_image_mode=False,
+    max_num_faces=1,
+    refine_landmarks=True,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
+
+# Mediapipe 그리기 유틸리티 초기화
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
 
 def calculate_EAR(landmarks, eye_indices):
     """
@@ -26,14 +41,44 @@ def calculate_EAR(landmarks, eye_indices):
     :param eye_indices: 눈의 랜드마크 인덱스 리스트
     :return: EAR 값
     """
-    A = np.linalg.norm(np.array([landmarks[eye_indices[1]].x, landmarks[eye_indices[1]].y]) -
-                       np.array([landmarks[eye_indices[5]].x, landmarks[eye_indices[5]].y]))
-    B = np.linalg.norm(np.array([landmarks[eye_indices[2]].x, landmarks[eye_indices[2]].y]) -
-                       np.array([landmarks[eye_indices[4]].x, landmarks[eye_indices[4]].y]))
-    C = np.linalg.norm(np.array([landmarks[eye_indices[0]].x, landmarks[eye_indices[0]].y]) -
-                       np.array([landmarks[eye_indices[3]].x, landmarks[eye_indices[3]].y]))
-    EAR = (A + B) / (2.0 * C)
+    try:
+        A = np.linalg.norm(np.array([landmarks[eye_indices[1]].x, landmarks[eye_indices[1]].y]) -
+                           np.array([landmarks[eye_indices[5]].x, landmarks[eye_indices[5]].y]))
+        B = np.linalg.norm(np.array([landmarks[eye_indices[2]].x, landmarks[eye_indices[2]].y]) -
+                           np.array([landmarks[eye_indices[4]].x, landmarks[eye_indices[4]].y]))
+        C = np.linalg.norm(np.array([landmarks[eye_indices[0]].x, landmarks[eye_indices[0]].y]) -
+                           np.array([landmarks[eye_indices[3]].x, landmarks[eye_indices[3]].y]))
+        EAR = (A + B) / (2.0 * C)
+    except IndexError as e:
+        log.warning(f"Error calculating EAR: {e}")
+        EAR = 0.0
     return EAR
+
+def draw_landmarks(frame, face_landmarks):
+    """
+    얼굴 랜드마크를 프레임에 그리는 함수입니다.
+
+    :param frame: OpenCV 프레임
+    :param face_landmarks: Mediapipe가 감지한 얼굴 랜드마크
+    :return: 랜드마크가 그려진 프레임
+    """
+    # 랜드마크 그리기
+    mp_drawing.draw_landmarks(
+        image=frame,
+        landmark_list=face_landmarks,
+        connections=mp_face_mesh.FACEMESH_TESSELATION,
+        landmark_drawing_spec=None,
+        connection_drawing_spec=mp_drawing_styles.get_default_face_mesh_tesselation_style()
+    )
+
+    # 주요 랜드마크에 점 추가 (눈, 코, 입 등)
+    for idx, landmark in enumerate(face_landmarks.landmark):
+        if idx in [33, 160, 158, 133, 153, 144, 263, 387, 385, 362, 380, 373, 1, 234, 454, 13, 14]:
+            x = int(landmark.x * frame.shape[1])
+            y = int(landmark.y * frame.shape[0])
+            cv2.circle(frame, (x, y), 2, (0, 255, 0), -1)  # 녹색 점
+
+    return frame
 
 def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
     """
@@ -42,10 +87,6 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
     :param video_placeholder: Streamlit에서 비디오 프레임을 표시할 자리
     :param chart_placeholder: Streamlit에서 차트를 표시할 자리
     """
-    # 'real_time_running' 키가 초기화되지 않았을 경우 초기화
-    if 'real_time_running' not in st.session_state:
-        st.session_state['real_time_running'] = False
-
     detector = FER(mtcnn=True)
     cap = cv2.VideoCapture(0)  # 기본 웹캠 사용
 
@@ -84,7 +125,7 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
 
     last_update_time = time.time()
 
-    while st.session_state['real_time_running']:
+    while st.session_state['real_time_running_indepth']:
         ret, frame = cap.read()
         if not ret:
             st.warning("Failed to read from webcam.")
@@ -173,6 +214,10 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
                         (x, y + h + 70), cv2.FONT_HERSHEY_SIMPLEX,
                         0.6, (0, 255, 255), 2)
 
+            # 랜드마크 시각화
+            if landmarks:
+                frame = draw_landmarks(frame, results_face.multi_face_landmarks[0])
+
             # 신뢰도 수준을 리스트에 추가하여 Moving Average 계산
             confidence_levels.append(driver_confidence_level)
             if len(confidence_levels) > window_size:
@@ -212,69 +257,41 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
                 # 리스트를 데이터프레임으로 변환
                 new_data = pd.DataFrame(chart_data_list)
                 # 기존 차트 데이터에 추가
-                if 'chart_data_full' not in st.session_state:
-                    st.session_state['chart_data_full'] = new_data
+                if 'chart_data_full_indepth' not in st.session_state:
+                    st.session_state['chart_data_full_indepth'] = new_data
                 else:
-                    st.session_state['chart_data_full'] = pd.concat([st.session_state['chart_data_full'], new_data], ignore_index=True)
+                    st.session_state['chart_data_full_indepth'] = pd.concat([st.session_state['chart_data_full_indepth'], new_data], ignore_index=True)
                 # 차트 업데이트
-                chart_placeholder.line_chart(st.session_state['chart_data_full'].set_index('time_seconds'))
+                chart_placeholder.line_chart(st.session_state['chart_data_full_indepth'].set_index('time_seconds'))
                 # 리스트 초기화
                 chart_data_list = []
-                st.session_state['last_update_time'] = current_time
+                st.session_state['last_update_time_indepth'] = current_time
 
         # CPU 사용량 줄이기 위해 잠시 대기
         time.sleep(0.03)
-
-    # 웹캠 릴리스 및 윈도우 닫기
-    cap.release()
-    cv2.destroyAllWindows()
-
-    # 실시간 분석이 중지되었을 때 차트를 저장
-    if not st.session_state['real_time_running']:
-        output_dir = 'outputs'
-        os.makedirs(output_dir, exist_ok=True)
-        timestamp = int(time.time())
-        chart_file_path = os.path.join(output_dir, f'real_time_chart_{timestamp}.png')
-
-        # matplotlib를 사용하여 최종 차트 플롯
-        if 'chart_data_full' in st.session_state and not st.session_state['chart_data_full'].empty:
-            plt.figure(figsize=(12, 6))
-            plt.plot(st.session_state['chart_data_full']['time_seconds'], st.session_state['chart_data_full']['driver_confidence_level'], marker='o', label='Final Confidence Level')
-            plt.title('Driver Confidence Level Over Time')
-            plt.xlabel('Time (seconds)')
-            plt.ylabel('Confidence Level')
-            plt.legend()
-            plt.grid(True)
-            plt.tight_layout()
-            plt.savefig(chart_file_path)  # 차트를 PNG 파일로 저장
-            plt.close()
-
-            st.success(f"Real-time analysis stopped. Chart saved to {chart_file_path}.")
-        else:
-            st.warning("No chart data to save.")
 
 def main():
     """
     Streamlit 애플리케이션의 메인 함수입니다.
     """
-    st.title("실시간 운전자 자신감 측정기")
+    st.title("실시간 운전자 자신감 측정기 (In-Depth)")
 
     # 비디오 및 차트 플레이스홀더 생성
     video_placeholder = st.empty()
     chart_placeholder = st.empty()
 
     # 시작/정지 버튼
-    if 'real_time_running' not in st.session_state:
-        st.session_state['real_time_running'] = False
+    if 'real_time_running_indepth' not in st.session_state:
+        st.session_state['real_time_running_indepth'] = False
 
-    if st.button("Start Real-Time Analysis"):
-        st.session_state['real_time_running'] = True
-        st.session_state['chart_data_full'] = pd.DataFrame(columns=['time_seconds', 'driver_confidence_level'])
-        st.session_state['last_update_time'] = time.time()
+    if st.button("Start Real-Time Analysis (In-Depth)"):
+        st.session_state['real_time_running_indepth'] = True
+        st.session_state['chart_data_full_indepth'] = pd.DataFrame(columns=['time_seconds', 'driver_confidence_level'])
+        st.session_state['last_update_time_indepth'] = time.time()
         real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder)
 
-    if st.button("Stop Real-Time Analysis"):
-        st.session_state['real_time_running'] = False
+    if st.button("Stop Real-Time Analysis (In-Depth)"):
+        st.session_state['real_time_running_indepth'] = False
 
 if __name__ == "__main__":
     main()
