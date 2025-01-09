@@ -1,6 +1,7 @@
 # Hyundai Driver Confidence Measure
+Author: Mark Y. Jang
 
-Welcome to the Hyundai Driver Confidence Measure, a comprehensive tool designed to analyze driver emotions and assess confidence levels in real-time and from pre-recorded video footage. This application leverages advanced computer vision and machine learning techniques to provide insightful analytics on driver behavior and state.
+Welcome to the Hyundai Driver Confidence Measure, a tool designed to analyze driver emotions and assess confidence levels in real-time and from pre-recorded video footage. This app leverages advanced computer vision and machine learning techniques to provide insightful analytics on driver behavior and state.
 
 Table of Contents
 
@@ -9,9 +10,9 @@ Table of Contents
 	3.	Technology Stack
 	4.	Installation
 	5.	Usage
-	•	1. Video Analysis
-	•	2. Real-Time Analysis
-	•	3. Results & Report
+		1. Video Analysis
+		2. Real-Time Analysis
+		3. Results & Report
 	6.	Emotion Detection & Driver Confidence Calculation
 	•	Emotion Detection
 	•	Feature Extraction
@@ -41,7 +42,6 @@ Technology Stack
 	•	Emotion Detection: FER (Facial Emotion Recognition)
 	•	Data Processing: Pandas, NumPy
 	•	Visualization: Matplotlib
-	•	Logging: Python logging module
 
 Installation
 
@@ -58,12 +58,10 @@ git clone https://github.com/markjang03/hyundai-driver-confidence-measurer.git
 cd hyundai-driver-confidence-measurer
 
 
-	2.	Create a Virtual Environment:
-It’s recommended to use a virtual environment to manage dependencies.
-
+	2.	Create a Virtual Environment(this is not required but recommended):
+ 
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
 
 	3.	Install Dependencies:
 
@@ -75,8 +73,6 @@ pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm
 copy and paste the line above in terminal
 
 	4.	Verify Installation:
-Ensure that all packages are installed correctly.
-
 pip list
 
 
@@ -112,17 +108,6 @@ Steps:
 	3.	View Results: Once analysis is complete, the final video and emotion trends will be displayed.
 
 2. Real-Time Analysis (incomplete {this would run but wont save the result ima work on it soon})
-
-Purpose: Monitor and analyze driver emotions and confidence levels in real-time using a webcam.
-
-Steps:
-	1.	Start Analysis: Click the “Start Real-Time Analysis” button to begin monitoring. 
- The app will:
-	•	Capture video frames from your webcam.
-	•	Detect emotions and extract facial features in real-time.
-	•	Display the video feed with annotated emotions and confidence levels.
-	•	Plot confidence trends over time.
-	2.	Stop Analysis: Click the “Stop Real-Time Analysis” button to end monitoring. The application will save the confidence trends chart.
 
 3. Results & Report
 
@@ -222,6 +207,3 @@ Data Flow
 	6.	Visualization:
 	•	Emotion trends and distributions are visualized using Matplotlib and displayed within the Streamlit app.
 
-License
-
-This project is licensed under the MIT License.
