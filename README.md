@@ -53,27 +53,27 @@ Prerequisites
 Steps
 
 	1.	Clone the Repository: git clone https://github.com/markjang03/hyundai-driver-confidence-measurer.git
-cd hyundai-driver-confidence-measurer
+	cd hyundai-driver-confidence-measurer
 
 
 
 
 	2.	Create a Virtual Environment(this is not required but recommended):
  
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+	python -m venv venv
+	source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 	3.	Install Dependencies:
 
-pip install -r requirements.txt
+	pip install -r requirements.txt
 
 If requirements.txt is not provided, install the necessary packages manually:
 
-pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm 
+	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm 
 copy and paste the line above in terminal
 
 	4.	Verify Installation:
-pip list
+	pip list
 
 
 Usage
@@ -82,7 +82,7 @@ Running the Streamlit Application
 
 Navigate to the project directory and run the Streamlit app:
 
-streamlit run gui/app.py -> this will only run locally
+	streamlit run gui/app.py -> this will only run locally
 
 Application Tabs
 
