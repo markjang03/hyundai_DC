@@ -52,10 +52,10 @@ Prerequisites
 
 Steps
 
-	1.	Clone the Repository:
-
-git clone https://github.com/markjang03/hyundai-driver-confidence-measurer.git
+	1.	Clone the Repository: git clone https://github.com/markjang03/hyundai-driver-confidence-measurer.git
 cd hyundai-driver-confidence-measurer
+
+
 
 
 	2.	Create a Virtual Environment(this is not required but recommended):
