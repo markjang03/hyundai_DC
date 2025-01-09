@@ -66,8 +66,7 @@ Steps
 	3.	Install Dependencies:
 
 	pip install -r requirements.txt
-
-If requirements.txt is not provided, install the necessary packages manually:
+OR u can do it manually
 
 	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm 
 copy and paste the line above in terminal
