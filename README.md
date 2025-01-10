@@ -73,10 +73,6 @@ copy and paste the line above in terminal
 
 	4.	Verify Installation:
 	pip list
-	5. 	Connect it to AWS:
- 	create an ".env" file in the root
-	REACT_APP_AMAZON_API_BASE_URL = "YOUR AWS URL" {example: REACT_APP_AMAZON_API_BASE_URL = "https://gatechmarkyjang.execute-api.us-east-1.amazonaws.com/init"}
-
 Usage
 
 Running the Streamlit Application
