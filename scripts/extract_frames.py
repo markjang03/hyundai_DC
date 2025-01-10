@@ -1,4 +1,52 @@
-# scripts/extract_frames.py
+"""
+Module: extract_frames.py
+
+Description:
+This script extracts frames from a video file at a specified frame rate (fps) and saves them as image files in a designated folder.
+It also generates a CSV file containing metadata for the extracted frames, such as frame number and corresponding filenames.
+
+
+Classes and Functions:
+----------------------
+1. extract_frames(video_path, frames_folder, output_csv, fps=1)
+    - Extracts frames from a video file at the specified frame rate.
+    - Parameters:
+        - video_path (str): Path to the input video file.
+        - frames_folder (str): Path to the folder where frames will be saved.
+        - output_csv (str): Path to the output CSV file containing frame metadata.
+        - fps (int): Frames per second to extract (default: 1).
+    - Returns:
+        - None
+
+2. parse_arguments()
+    - Parses command-line arguments for script execution.
+    - Arguments:
+        - --video_path: Path to the input video file (required).
+        - --frames_folder: Path to the folder to save frames (required).
+        - --output_csv: Path to save the output CSV file with frame metadata (required).
+        - --fps: Frames per second to extract (default: 1).
+    - Returns:
+        - argparse.Namespace: Parsed arguments.
+
+3. main()
+    - Entry point of the script. Parses arguments and invokes `extract_frames`.
+
+Usage:
+------
+1. Prepare a video file for frame extraction.
+2. Run this script to extract frames:
+    $ python extract_frames.py --video_path <video_path> --frames_folder <frames_folder> --output_csv <csv_path> --fps <frame_rate>
+
+
+Output:
+-------
+1. Extracted frames saved in the specified folder.
+2. A CSV file with metadata for each extracted frame, including:
+    - Frame number
+    - Frame filename
+
+Author: Mark jang
+"""
 
 import cv2
 import os
@@ -13,12 +61,11 @@ log = logging.getLogger("extract_frames")
 
 def extract_frames(video_path, frames_folder, output_csv, fps=1):
     """
-    비디오 파일에서 프레임을 추출하여 지정된 폴더에 저장하고, 프레임 정보를 CSV 파일로 저장합니다.
 
-    :param video_path: 비디오 파일 경로
-    :param frames_folder: 프레임을 저장할 폴더 경로
-    :param output_csv: 프레임 정보를 저장할 CSV 파일 경로
-    :param fps: 초당 추출할 프레임 수
+    :param video_path: video file path
+    :param frames_folder: path where the frames are saved
+    :param output_csv: csv path
+    :param fps
     """
     if not os.path.exists(video_path):
         log.error(f"Video file does not exist: {video_path}")
@@ -33,7 +80,7 @@ def extract_frames(video_path, frames_folder, output_csv, fps=1):
 
     video_fps = cap.get(cv2.CAP_PROP_FPS)
     if video_fps == 0:
-        video_fps = 1  # 기본값 설정
+        video_fps = 1
     frame_interval = int(video_fps / fps) if fps > 0 else 1
 
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -52,7 +99,7 @@ def extract_frames(video_path, frames_folder, output_csv, fps=1):
 
     cap.release()
 
-    # CSV 파일로 저장
+    # CSV
     df = pd.DataFrame(extracted_frames)
     df.to_csv(output_csv, index=False)
     log.info(f"Extracted {len(extracted_frames)} frames. Saved to {output_csv}")

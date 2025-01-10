@@ -1,5 +1,3 @@
-# gui/app.py
-
 import streamlit as st
 import os
 import sys
@@ -8,7 +6,6 @@ import pandas as pd
 import time
 from datetime import datetime
 
-# 상위 디렉토리를 sys.path에 추가하여 scripts 모듈을 인식하게 함
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
@@ -31,7 +28,7 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
     cmd = [
         'python', 'scripts/analyze_frames.py',
         '--frames_folder', frames_folder,
-        '--model_path', model_path,  # 현재 analyze_frames.py는 model_path를 사용하지 않음
+        '--model_path', model_path,
         '--output_csv', output_csv,
         '--fps', str(fps)
     ]
@@ -82,7 +79,7 @@ def generate_report_script(analysis_csv, trends_image, report_path):
 
 def main():
     st.set_page_config(page_title="Hyundai Driver Confidence Measurer", layout="wide")
-    st.title("Hyundai Driver Confidence Measurer")
+    st.title("Hyundai Driver Confidence Measure")
 
     # Python 실행 파일과 버전을 출력하여 올바른 환경에서 실행되고 있는지 확인
     st.write(f"**Python Executable:** {sys.executable}")
@@ -96,7 +93,6 @@ def main():
         uploaded_file = st.file_uploader("Upload video for analysis", type=["mp4", "avi", "mov"])
 
         if uploaded_file is not None:
-            # 업로드된 비디오 파일 저장
             os.makedirs("data", exist_ok=True)
             video_path = os.path.join("data", f"input_video_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4")
             with open(video_path, "wb") as f:
@@ -104,7 +100,6 @@ def main():
             st.success("Video uploaded successfully!")
 
             if st.button("Start Analysis"):
-                # 고유 식별자를 생성하여 출력 파일 경로 설정
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 frames_folder = f"data/extracted_frames_{timestamp}"
                 analysis_csv = f"outputs/emotion_analysis_{timestamp}.csv"
@@ -118,10 +113,9 @@ def main():
                 os.makedirs('reports', exist_ok=True)
 
                 with st.spinner("Extracting frames..."):
-                    extract_frames(video_path, frames_folder, analysis_csv, fps=1)  # fps 조절 가능
+                    extract_frames(video_path, frames_folder, analysis_csv, fps=1)  # fps is set to 1 but feel free to change this
 
                 with st.spinner("Analyzing frames..."):
-                    # model_path는 현재 사용되지 않으므로 빈 문자열 전달
                     analyze_frames(frames_folder, model_path="", output_csv=analysis_csv, fps=1)
 
                 with st.spinner("Annotating frames..."):
@@ -135,13 +129,12 @@ def main():
 
                 st.success("Video analysis complete!")
 
-                # 최종 비디오 표시
+                # shows the final vid
                 if os.path.exists(final_video):
                     st.video(final_video)
                 else:
                     st.write("No final video found.")
 
-                # 감정 추세 이미지 표시
                 if os.path.exists(trends_image):
                     st.image(trends_image, caption="Emotion Trends Over Time")
                 else:
@@ -151,11 +144,11 @@ def main():
     with tabs[1]:
         st.header("2. Real-Time Analysis")
 
-        # 세션 상태 초기화
+        # reset the session
         if 'real_time_running' not in st.session_state:
             st.session_state['real_time_running'] = False
 
-        # 비디오 피드와 차트를 위한 플레이스홀더 초기화
+        # reset placeholders
         video_placeholder = st.empty()
         chart_placeholder = st.empty()
 
@@ -165,7 +158,7 @@ def main():
         def stop_real_time_analysis():
             st.session_state['real_time_running'] = False
 
-        # 시작 및 중지 버튼 배치
+        # start stop buttons
         col1, col2 = st.columns(2)
         with col1:
             if not st.session_state['real_time_running']:
@@ -174,7 +167,6 @@ def main():
             if st.session_state['real_time_running']:
                 st.button("Stop Real-Time Analysis", on_click=stop_real_time_analysis)
 
-        # 실시간 분석 실행
         if st.session_state['real_time_running']:
             from scripts.real_time_analysis import real_time_emotion_analysis_streamlit
             real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder)
@@ -183,11 +175,10 @@ def main():
     with tabs[2]:
         st.header("3. Real-Time Analysis (In-Depth)")
 
-        # 세션 상태 초기화
+        # session reset
         if 'real_time_running_indepth' not in st.session_state:
             st.session_state['real_time_running_indepth'] = False
 
-        # 비디오 피드와 차트를 위한 플레이스홀더 초기화
         video_placeholder_indepth = st.empty()
         chart_placeholder_indepth = st.empty()
 
@@ -197,7 +188,7 @@ def main():
         def stop_real_time_analysis_indepth():
             st.session_state['real_time_running_indepth'] = False
 
-        # 시작 및 중지 버튼 배치
+        # start stop button
         col1, col2 = st.columns(2)
         with col1:
             if not st.session_state['real_time_running_indepth']:
@@ -206,7 +197,6 @@ def main():
             if st.session_state['real_time_running_indepth']:
                 st.button("Stop Real-Time Analysis (In-Depth)", on_click=stop_real_time_analysis_indepth)
 
-        # 실시간 분석 실행
         if st.session_state['real_time_running_indepth']:
             from scripts.real_time_indepth import real_time_emotion_analysis_streamlit
             real_time_emotion_analysis_streamlit(video_placeholder_indepth, chart_placeholder_indepth)
@@ -216,7 +206,7 @@ def main():
         st.header("4. Results & Report")
         st.subheader("Analyzed Emotion Data")
 
-        # 최신 분석 CSV 파일 찾기
+        # fin csv file
         outputs = os.listdir('outputs')
         analysis_files = [f for f in outputs if f.startswith('emotion_analysis_') and f.endswith('.csv')]
 
@@ -229,7 +219,7 @@ def main():
                 st.error(f"Error reading analysis CSV: {e}")
                 df = pd.DataFrame()
 
-            # 'time_seconds' 컬럼이 없는 경우 추가
+            # 'time_seconds'
             if 'time_seconds' not in df.columns:
                 if 'frame' in df.columns:
                     df['frame_number'] = df['frame'].apply(lambda x: int(''.join(filter(str.isdigit, x))))
@@ -239,7 +229,6 @@ def main():
 
             st.dataframe(df)
 
-            # 감정 추세 그래프 표시
             st.subheader("Emotion Trends Graph")
             trends_image = analysis_csv.replace('emotion_analysis_', 'emotion_trends_').replace('.csv', '.png')
             if os.path.exists(trends_image):
@@ -247,14 +236,12 @@ def main():
             else:
                 st.write("No trends image found.")
 
-            # 감정 분포 그래프 표시
             emotion_distribution_image = analysis_csv.replace('emotion_analysis_', 'emotion_distribution_').replace('.csv', '.png')
             if os.path.exists(emotion_distribution_image):
                 st.image(emotion_distribution_image, caption="Emotion Distribution")
             else:
                 st.write("No emotion distribution image found.")
 
-            # 드라이버 신뢰도 수준 시간에 따른 표시
             st.subheader("Driver Confidence Level Over Time")
             if 'final_confidence' in df.columns:
                 confidence_over_time = df.groupby('time_seconds')['final_confidence'].mean()
@@ -262,7 +249,6 @@ def main():
             else:
                 st.write("No final confidence data available.")
 
-            # 개별 요소의 시계열 그래프 표시
             st.subheader("Individual Metrics Over Time")
 
             metrics = ['emotion', 'avg_EAR', 'head_tilt_angle', 'mouth_opening']
@@ -276,7 +262,6 @@ def main():
             for metric in metrics:
                 st.write(f"### {metric_titles.get(metric, metric)}")
                 if metric == 'emotion':
-                    # 감정 점수를 숫자로 변환 (감정-자신감 매핑 사용)
                     emotion_confidence_mapping = {
                         'happy': 0.6,
                         'neutral': 0.5,
@@ -295,7 +280,6 @@ def main():
                     else:
                         st.write(f"No data available for {metric_titles.get(metric, metric)}.")
 
-            # 최종 비디오 표시
             st.subheader("Final Video")
             final_video = analysis_csv.replace('emotion_analysis_', 'final_output_video_').replace('.csv', '.mp4')
             if os.path.exists(final_video):
@@ -303,7 +287,6 @@ def main():
             else:
                 st.write("No final video found.")
 
-            # 보고서 다운로드 버튼
             st.subheader("Download Report")
             report_path = analysis_csv.replace('emotion_analysis_', 'emotion_analysis_report_').replace('.csv', '.pdf')
             if os.path.exists(report_path):
@@ -314,7 +297,7 @@ def main():
                         data=report,
                         file_name=os.path.basename(report_path),
                         mime="application/pdf",
-                        key=f"report_download_button_{int(time.time())}"  # 고유 키
+                        key=f"report_download_button_{int(time.time())}"
                     )
             else:
                 st.write("No report available for download.")

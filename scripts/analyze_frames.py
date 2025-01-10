@@ -1,4 +1,64 @@
-# scripts/analyze_frames.py
+"""
+Module: analyze_frames.py
+Description:
+This script processes video frames for emotion and feature analysis,
+specifically targeting driver confidence levels. It uses Mediapipe for facial landmark detection and FER for emotion recognition.
+The results, including emotions, confidence levels, and additional biometric features, are saved to a CSV file.
+The script also calculates smoothed confidence levels and visualizes trends over time in a graph.
+
+Classes and Functions:
+----------------------
+1. calculate_EAR(landmarks, eye_indices)
+    - Calculates the Eye Aspect Ratio (EAR) for given facial landmarks.
+    - Parameters:
+        - landmarks (list): List of facial landmarks detected by Mediapipe.
+        - eye_indices (list): Indices of landmarks corresponding to an eye.
+    - Returns:
+        - float: EAR value. Returns 0.0 in case of an error.
+
+2. analyze_frames(frames_folder, model_path, output_csv, fps=1)
+    - Analyzes video frames for emotions and biometric features, then saves results to a CSV file.
+    - Parameters:
+        - frames_folder (str): Path to the folder containing video frames.
+        - model_path (str): Path to the emotion detection model (currently unused).
+        - output_csv (str): Path to save the analysis results in CSV format.
+        - fps (int): Frame rate used to calculate timestamps for each frame.
+    - Returns:
+        - None
+
+3. parse_arguments()
+    - Parses command-line arguments for script execution.
+    - Arguments:
+        - --frames_folder: Path to the folder with extracted frames (required).
+        - --model_path: Path to the emotion detection model (optional).
+        - --output_csv: Path to save the analysis CSV file (required).
+        - --fps: Frames per second for timestamp calculations (default: 1).
+    - Returns:
+        - argparse.Namespace: Parsed arguments.
+
+4. main()
+    - Entry point of the script. Parses arguments and invokes `analyze_frames`.
+
+Usage:
+------
+1. Extract frames from a video using a separate script.
+2. Run this script to analyze the frames:
+    $ python analyze_frames.py --frames_folder <frames_path> --output_csv <output_csv_path> --fps <frame_rate>
+
+Output:
+-------
+1. A CSV file containing:
+    - Frame name
+    - Time in seconds
+    - Dominant emotion and confidence
+    - Driver confidence level
+    - Average EAR
+    - Head tilt angle
+    - Mouth opening
+2. A visualization of driver confidence trends over time as a PNG image.
+
+Author: Mark Jang
+"""
 
 import os
 import cv2
@@ -12,16 +72,15 @@ import mediapipe as mp
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 로깅 설정
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("analyze_frames")
 
-# Mediapipe 초기화
+# Mediapipe reset
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True)
 
 def calculate_EAR(landmarks, eye_indices):
-    # Eye Aspect Ratio (EAR) 계산
+    # Eye Aspect Ratio (EAR) calculations
     try:
         A = np.linalg.norm(np.array([landmarks[eye_indices[1]].x, landmarks[eye_indices[1]].y]) -
                            np.array([landmarks[eye_indices[5]].x, landmarks[eye_indices[5]].y]))
@@ -37,17 +96,15 @@ def calculate_EAR(landmarks, eye_indices):
 
 def analyze_frames(frames_folder, model_path, output_csv, fps=1):
     """
-    지정된 폴더의 프레임들을 분석하여 감정 및 추가 피처 데이터를 CSV 파일로 저장합니다.
-
-    :param frames_folder: 프레임이 저장된 폴더 경로
-    :param model_path: 사용하지 않음 (FER는 내부적으로 모델 관리)
-    :param output_csv: 분석 결과를 저장할 CSV 파일 경로
-    :param fps: 프레임 속도 (초당 프레임 수)
+    analyze the frames then save the data in csv
+    :param frames_folder: path
+    :param model_path: path
+    :param output_csv: path
+    :param fps: frame per second
     """
     detector = FER(mtcnn=True)
     results = []
 
-    # 감정-자신감 매핑 재정의
     emotion_confidence_mapping = {
         'happy': 0.6,
         'neutral': 0.5,
@@ -59,14 +116,11 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
         'contempt': 0.1
     }
 
-    # 눈 EAR 계산을 위한 랜드마크 인덱스 (왼쪽, 오른쪽 눈)
+    # landmark index for EAR calculation
     LEFT_EYE = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE = [263, 387, 385, 362, 380, 373]
 
-    # `extract_frames.py`가 생성한 CSV 파일을 읽어 프레임 목록 획득
-    frames_csv = os.path.join(frames_folder, '..', 'emotion_analysis.csv')  # 예시 경로 수정 필요
-    # 아니면 'extract_frames.py'에서 생성한 CSV 파일을 직접 전달받음
-    # 현재 `analyze_frames.py`는 'emotion_analysis_{timestamp}.csv' 파일을 받음
+    frames_csv = os.path.join(frames_folder, '..', 'emotion_analysis_20241129_132101.csv') #this needs to be fixed
 
     # `extract_frames.py`에서 생성한 CSV 파일을 직접 사용
     frames_csv = output_csv.replace('emotion_analysis_', 'extracted_frames_').replace('.csv', '.csv')
@@ -91,14 +145,14 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
             log.warning(f"Failed to read frame: {frame_path}")
             continue
 
-        # 얼굴 감정 분석
+        # detect emotion here
         try:
             detected = detector.detect_emotions(img)
         except Exception as e:
             log.warning(f"Error detecting emotions in frame {frame_file}: {e}")
             detected = []
 
-        # 얼굴 랜드마크 분석
+        # analyze landmarks
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         try:
             results_face = face_mesh.process(rgb_img)
@@ -115,25 +169,25 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
             confidence_score = emotions[dominant_emotion]
             driver_confidence_level = emotion_confidence_mapping.get(dominant_emotion, 0.0)
 
-            # 추가 피처 추출
+            # additional features
             landmarks = results_face.multi_face_landmarks if results_face and results_face.multi_face_landmarks else None
             if landmarks:
                 landmarks = landmarks[0].landmark
-                # 왼쪽 눈 EAR
+
                 left_EAR = calculate_EAR(landmarks, LEFT_EYE)
-                # 오른쪽 눈 EAR
+
                 right_EAR = calculate_EAR(landmarks, RIGHT_EYE)
-                # 평균 EAR
+
                 avg_EAR = (left_EAR + right_EAR) / 2.0
             else:
-                avg_EAR = 0.0  # 얼굴 랜드마크를 찾지 못한 경우
+                avg_EAR = 0.0  # if no landmarks were found
 
-            # 머리 기울기 계산 (간단한 예시: 얼굴 랜드마크를 이용한 기울기 추정)
+            # head tilt calculation
             if landmarks:
                 try:
-                    nose_tip = landmarks[1]  # 1번 랜드마크: 코 끝
-                    left_ear = landmarks[234]  # 왼쪽 귀
-                    right_ear = landmarks[454]  # 오른쪽 귀
+                    nose_tip = landmarks[1]
+                    left_ear = landmarks[234]
+                    right_ear = landmarks[454]
                     delta_x = right_ear.x - left_ear.x
                     delta_y = right_ear.y - left_ear.y
                     head_tilt_angle = np.degrees(np.arctan2(delta_y, delta_x))
@@ -143,11 +197,11 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
             else:
                 head_tilt_angle = 0.0
 
-            # 입 열림 정도 계산 (간단한 예시: 입의 수직 길이와 수평 길이 비율)
+            # mouth opening frequencies
             if landmarks:
                 try:
-                    top_lip = landmarks[13]  # 13번 랜드마크: 입 위쪽
-                    bottom_lip = landmarks[14]  # 14번 랜드마크: 입 아래쪽
+                    top_lip = landmarks[13]
+                    bottom_lip = landmarks[14]
                     mouth_opening = np.linalg.norm([top_lip.x - bottom_lip.x, top_lip.y - bottom_lip.y])
                 except IndexError as e:
                     log.warning(f"Error calculating mouth opening in frame {frame_file}: {e}")
@@ -155,11 +209,11 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
             else:
                 mouth_opening = 0.0
 
-            # time_seconds 계산 (프레임 번호 / fps)
+            # time_seconds calculation
             time_seconds = idx / fps
 
             results.append({
-                'frame': frame_file,  # 'frame' 컬럼 추가
+                'frame': frame_file,
                 'time_seconds': time_seconds,
                 'emotion': dominant_emotion,
                 'confidence': confidence_score,
@@ -170,7 +224,6 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
             })
 
     df = pd.DataFrame(results)
-    # 항상 CSV 파일을 생성, 심지어 데이터가 없을 경우에도
     os.makedirs(os.path.dirname(output_csv), exist_ok=True)
     df.to_csv(output_csv, index=False)
     log.info(f"Emotion and feature analysis results saved to {output_csv}")
@@ -178,28 +231,26 @@ def analyze_frames(frames_folder, model_path, output_csv, fps=1):
     if df.empty:
         log.warning("No emotions detected in any frames.")
     else:
-        # 감정 스무딩 (Moving Average)
+        # Moving Average
         window_size = 5
         df['smoothed_confidence'] = df['driver_confidence_level'].rolling(window=window_size, min_periods=1).mean()
 
-        # 변화율 계산
+        # calculate the diff
         df['confidence_change_rate'] = df['smoothed_confidence'].diff().abs().fillna(0)
 
-        # 최종 자신감 수준 (스무딩된 자신감 - 변화율)
+        # final confidence calculation
         df['final_confidence'] = df['smoothed_confidence'] - df['confidence_change_rate']
         df['final_confidence'] = df['final_confidence'].clip(lower=0.0, upper=1.0)
 
-        # 피로도 반영 (EAR이 낮을수록 피로도가 증가하여 자신감을 감소시키는 요소)
-        df['fatigue_factor'] = (0.3 - df['avg_EAR']) * 0.2  # EAR이 0.3 이하일 경우 피로도 증가
+        # small EAR meaning more fatigue which decreases confidence level
+        df['fatigue_factor'] = (0.3 - df['avg_EAR']) * 0.2
         df['fatigue_factor'] = df['fatigue_factor'].clip(lower=-0.2, upper=0.2)
         df['final_confidence'] += df['fatigue_factor']
         df['final_confidence'] = df['final_confidence'].clip(lower=0.0, upper=1.0)
-
-        # 최종 자신감 수준을 다시 CSV 파일에 저장
         df.to_csv(output_csv, index=False)
         log.info(f"Final confidence levels updated in {output_csv}")
 
-        # 감정 추세 그래프 저장
+        # plt
         trends_image_path = output_csv.replace('emotion_analysis_', 'emotion_trends_').replace('.csv', '.png')
         plt.figure(figsize=(12, 6))
         plt.plot(df['time_seconds'], df['final_confidence'], marker='o', label='Final Confidence Level')

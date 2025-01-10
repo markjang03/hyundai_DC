@@ -1,5 +1,48 @@
-# scripts/compile_video.py
+"""
+Module: compile_video.py
 
+Description:
+This script compiles a sequence of image frames from a specified folder into a video file.
+The frames are read in sorted order, combined into a video, and saved at a user-specified path.
+The script supports configuring the frames-per-second (fps) for the output video.
+
+
+Classes and Functions:
+----------------------
+1. compile_video(frames_folder, output_video, fps=1)
+    - Compiles image frames into a video file.
+    - Parameters:
+        - frames_folder (str): Path to the folder containing image frames.
+        - output_video (str): Path to save the compiled video file.
+        - fps (int): Frames per second for the output video (default: 1).
+    - Returns:
+        - None
+
+2. parse_arguments()
+    - Parses command-line arguments for script execution.
+    - Arguments:
+        - --frames_folder: Path to the folder containing image frames (required).
+        - --output_video: Path to save the compiled video file (required).
+        - --fps: Frames per second for the output video (default: 1).
+    - Returns:
+        - argparse.Namespace: Parsed arguments.
+
+3. main()
+    - Entry point of the script. Parses arguments and invokes `compile_video`.
+
+Usage:
+------
+1. Prepare a folder of image frames in sequential order.
+2. Run this script to compile the frames into a video:
+    $ python compile_video.py --frames_folder <frames_path> --output_video <video_path> --fps <frame_rate>
+
+Output:
+-------
+1. A video file saved at the specified output path.
+2. The video contains all frames from the folder in sorted order, played at the specified fps.
+
+Author: Mark Jang
+"""
 import cv2
 import os
 import argparse
@@ -7,11 +50,9 @@ from tqdm import tqdm
 
 def compile_video(frames_folder, output_video, fps=1):
     """
-    주석이 추가된 프레임을 합쳐 최종 비디오를 생성합니다.
-
-    :param frames_folder: 주석이 추가된 프레임이 저장된 폴더 경로
-    :param output_video: 생성될 비디오 파일 경로
-    :param fps: 생성될 비디오의 FPS
+    :param frames_folder: path for folder
+    :param output_video: vid path
+    :param fps
     """
     frame_files = sorted([f for f in os.listdir(frames_folder) if f.lower().endswith(('.jpg', '.png'))])
 
@@ -19,12 +60,12 @@ def compile_video(frames_folder, output_video, fps=1):
         print(f"No frames found in {frames_folder}")
         return
 
-    # 첫 번째 프레임을 읽어 비디오의 크기 결정
+    # reads the first frame of the video to decide the size
     first_frame_path = os.path.join(frames_folder, frame_files[0])
     frame = cv2.imread(first_frame_path)
     height, width, layers = frame.shape
 
-    # 비디오 작성자 초기화
+    # reset
     fourcc = cv2.VideoWriter_fourcc(*'mp4')
     video = cv2.VideoWriter(output_video, fourcc, fps, (width, height))
 

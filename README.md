@@ -58,8 +58,10 @@ Steps
 
 
 
+
 	2.	Create a Virtual Environment(this is not required but recommended):
- 
+
+
 	python -m venv venv
 	source venv/bin/activate  # On Windows: venv\Scripts\activate
 
@@ -68,11 +70,14 @@ Steps
 	pip install -r requirements.txt
 OR u can do it manually
 
-	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm 
+
+	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm
+
 copy and paste the line above in terminal
 
 	4.	Verify Installation:
 	pip list
+
 Usage
 
 Running the Streamlit Application
