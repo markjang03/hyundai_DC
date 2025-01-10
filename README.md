@@ -1,4 +1,4 @@
-# Hyundai Driver Confidence Measure
+# Hyundai Driver Confidence Measure - FER
 Author: Mark Y. Jang
 
 Welcome to the Hyundai Driver Confidence Measure, a tool designed to analyze driver emotions and assess confidence levels in real-time and from pre-recorded video footage. This app leverages advanced computer vision and machine learning techniques to provide insightful analytics on driver behavior and state.
