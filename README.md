@@ -58,7 +58,9 @@ Steps
 
 
 
+
 	2.	Create a Virtual Environment(this is not required but recommended):
+
 
 	python -m venv venv
 	source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -68,14 +70,13 @@ Steps
 	pip install -r requirements.txt
 OR u can do it manually
 
+
 	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm
+
 copy and paste the line above in terminal
 
 	4.	Verify Installation:
 	pip list
-	5. 	Connect it to AWS:
- 	create an ".env" file in the root
-	REACT_APP_AMAZON_API_BASE_URL = "YOUR AWS URL" {example: REACT_APP_AMAZON_API_BASE_URL = "https://gatechmarkyjang.execute-api.us-east-1.amazonaws.com/init"}
 
 Usage
 
