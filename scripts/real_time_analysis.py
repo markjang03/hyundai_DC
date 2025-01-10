@@ -1,5 +1,53 @@
-# scripts/real_time_analysis.py
+"""
+Module: real_time_analysis.py
 
+Description:
+This script implements a real-time driver confidence analysis system using a webcam.
+It analyzes emotions and calculates additional features such as EAR (Eye Aspect Ratio),
+head tilt angle, and mouth opening. The results are visualized on a Streamlit-based dashboard in real time.
+It uses Mediapipe for facial landmark detection and FER for emotion recognition.
+
+
+Classes and Functions:
+----------------------
+1. calculate_EAR(landmarks, eye_indices)
+    - Calculates the Eye Aspect Ratio (EAR) from facial landmarks.
+    - Parameters:
+        - landmarks: List of facial landmarks detected by Mediapipe.
+        - eye_indices: List of indices corresponding to eye landmarks.
+    - Returns:
+        - float: EAR value.
+
+2. real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder)
+    - Performs real-time emotion analysis and displays results in a Streamlit app.
+    - Parameters:
+        - video_placeholder: Streamlit container for displaying video frames.
+        - chart_placeholder: Streamlit container for displaying time-series charts.
+    - Returns:
+        - None
+
+3. main()
+    - Main function to initialize the Streamlit application.
+    - Sets up the dashboard with start/stop buttons and placeholders for video and charts.
+
+Features:
+---------
+1. Real-time emotion detection and driver confidence calculation.
+2. Visualization of confidence trends over time.
+3. Calculation of additional biometric features:
+    - Eye Aspect Ratio (EAR)
+    - Head tilt angle
+    - Mouth opening level
+4. Automatic saving of time-series data and confidence trend charts.
+
+
+Output:
+-------
+1. Real-time video feed with annotated emotions and features.
+2. Time-series chart displaying driver confidence levels over time.
+
+Author: Mark Jang
+"""
 import cv2
 from fer import FER
 import pandas as pd
@@ -11,20 +59,19 @@ import warnings
 import numpy as np
 import mediapipe as mp
 
-# 경고 메시지 무시 (선택 사항)
 warnings.filterwarnings("ignore")
 
-# Mediapipe 초기화
+# Initialize Mediapipe
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True)
 
 def calculate_EAR(landmarks, eye_indices):
     """
-    Eye Aspect Ratio (EAR)를 계산하는 함수입니다.
+    Calculates the Eye Aspect Ratio (EAR).
 
-    :param landmarks: 얼굴 랜드마크
-    :param eye_indices: 눈의 랜드마크 인덱스 리스트
-    :return: EAR 값
+    :param landmarks: Facial landmarks
+    :param eye_indices: List of indices for eye landmarks
+    :return: EAR value
     """
     A = np.linalg.norm(np.array([landmarks[eye_indices[1]].x, landmarks[eye_indices[1]].y]) -
                        np.array([landmarks[eye_indices[5]].x, landmarks[eye_indices[5]].y]))
@@ -37,23 +84,21 @@ def calculate_EAR(landmarks, eye_indices):
 
 def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
     """
-    실시간 감정 분석을 수행하고, 결과를 Streamlit에 시각화하는 함수입니다.
+    Performs real-time emotion analysis and visualizes the results on Streamlit.
 
-    :param video_placeholder: Streamlit에서 비디오 프레임을 표시할 자리
-    :param chart_placeholder: Streamlit에서 차트를 표시할 자리
+    :param video_placeholder: Placeholder to display video frames in Streamlit
+    :param chart_placeholder: Placeholder to display charts in Streamlit
     """
-    # 'real_time_running' 키가 초기화되지 않았을 경우 초기화
     if 'real_time_running' not in st.session_state:
         st.session_state['real_time_running'] = False
 
     detector = FER(mtcnn=True)
-    cap = cv2.VideoCapture(0)  # 기본 웹캠 사용
+    cap = cv2.VideoCapture(0)  # Use default webcam
 
     if not cap.isOpened():
         st.error("Cannot open webcam.")
         return
 
-    # 감정-자신감 매핑
     emotion_confidence_mapping = {
         'happy': 0.6,
         'neutral': 0.5,
@@ -67,20 +112,15 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
 
     results = []
     start_time = time.time()
-
-    # 데이터 수집을 위한 리스트 초기화
     chart_data_list = []
-
-    # Moving Average를 위한 창 크기 설정
     window_size = 5
     confidence_levels = []
 
-    # 눈 EAR 계산을 위한 랜드마크 인덱스 (왼쪽, 오른쪽 눈)
+
     LEFT_EYE = [33, 160, 158, 133, 153, 144]
     RIGHT_EYE = [263, 387, 385, 362, 380, 373]
 
-    # 실시간 데이터 업데이트 주기 설정 (초 단위)
-    update_interval = 1  # 1초마다 차트 업데이트
+    update_interval = 1  # Update chart every second
 
     last_update_time = time.time()
 
@@ -90,10 +130,9 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
             st.warning("Failed to read from webcam.")
             break
 
-        # 얼굴 및 감정 분석
         emotions = detector.detect_emotions(frame)
 
-        # 얼굴 랜드마크 분석
+        # Analyze facial landmarks
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results_face = face_mesh.process(rgb_frame)
 
@@ -103,25 +142,24 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
             confidence = emotions_scores[dominant_emotion]
             driver_confidence_level = emotion_confidence_mapping.get(dominant_emotion, 0.0)
 
-            # 추가 피처 추출
+            # Extract additional features
             landmarks = results_face.multi_face_landmarks
             if landmarks:
                 landmarks = landmarks[0].landmark
-                # 왼쪽 눈 EAR
+                # Left eye EAR
                 left_EAR = calculate_EAR(landmarks, LEFT_EYE)
-                # 오른쪽 눈 EAR
+                # Right eye EAR
                 right_EAR = calculate_EAR(landmarks, RIGHT_EYE)
-                # 평균 EAR
+                # Average EAR
                 avg_EAR = (left_EAR + right_EAR) / 2.0
             else:
-                avg_EAR = 0.0  # 얼굴 랜드마크를 찾지 못한 경우
+                avg_EAR = 0.0  # No facial landmarks found
 
-            # 머리 기울기 계산 (간단한 예시: 얼굴 랜드마크를 이용한 기울기 추정)
             if landmarks:
                 try:
-                    nose_tip = landmarks[1]  # 1번 랜드마크: 코 끝
-                    left_ear = landmarks[234]  # 왼쪽 귀
-                    right_ear = landmarks[454]  # 오른쪽 귀
+                    nose_tip = landmarks[1]  # Landmark 1: Nose tip
+                    left_ear = landmarks[234]  # Left ear
+                    right_ear = landmarks[454]  # Right ear
                     delta_x = right_ear.x - left_ear.x
                     delta_y = right_ear.y - left_ear.y
                     head_tilt_angle = np.degrees(np.arctan2(delta_y, delta_x))
@@ -130,11 +168,10 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
             else:
                 head_tilt_angle = 0.0
 
-            # 입 열림 정도 계산 (간단한 예시: 입의 수직 길이와 수평 길이 비율)
             if landmarks:
                 try:
-                    top_lip = landmarks[13]  # 13번 랜드마크: 입 위쪽
-                    bottom_lip = landmarks[14]  # 14번 랜드마크: 입 아래쪽
+                    top_lip = landmarks[13]  # Landmark 13: Upper lip
+                    bottom_lip = landmarks[14]  # Landmark 14: Lower lip
                     mouth_opening = np.linalg.norm([top_lip.x - bottom_lip.x, top_lip.y - bottom_lip.y])
                 except IndexError as e:
                     mouth_opening = 0.0
@@ -152,7 +189,6 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
                 'mouth_opening': mouth_opening
             })
 
-            # 프레임에 감정 및 신뢰도 표시
             (x, y, w, h) = face['box']
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(frame, f"{dominant_emotion} ({confidence:.2f})",
@@ -162,7 +198,6 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
                         (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX,
                         0.7, (255, 0, 0), 2)
 
-            # EAR, Head Tilt Angle, Mouth Opening 주석 추가
             cv2.putText(frame, f"Avg EAR: {avg_EAR:.2f}",
                         (x, y + h + 20), cv2.FONT_HERSHEY_SIMPLEX,
                         0.6, (0, 255, 255), 2)
@@ -173,70 +208,57 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
                         (x, y + h + 70), cv2.FONT_HERSHEY_SIMPLEX,
                         0.6, (0, 255, 255), 2)
 
-            # 신뢰도 수준을 리스트에 추가하여 Moving Average 계산
             confidence_levels.append(driver_confidence_level)
             if len(confidence_levels) > window_size:
                 confidence_levels.pop(0)
             smoothed_confidence = np.mean(confidence_levels)
 
-            # 변화율 계산
             if len(confidence_levels) >= 2:
                 change_rate = abs(confidence_levels[-1] - confidence_levels[-2])
             else:
                 change_rate = 0.0
 
-            # 최종 자신감 수준 계산
             final_confidence = smoothed_confidence - change_rate
             final_confidence = max(final_confidence, 0.0)
 
-            # 피로도 반영 (EAR이 낮을수록 피로도 증가하여 자신감 감소)
-            fatigue_factor = (0.3 - avg_EAR) * 0.2  # EAR이 0.3 이하일 경우 피로도 증가
+            fatigue_factor = (0.3 - avg_EAR) * 0.2  # Increase fatigue when EAR is below 0.3
             fatigue_factor = np.clip(fatigue_factor, -0.2, 0.2)
             final_confidence += fatigue_factor
             final_confidence = np.clip(final_confidence, 0.0, 1.0)
 
-            # 최종 자신감 수준을 데이터 리스트에 추가
             chart_data_list.append({
                 'time_seconds': round(timestamp, 2),
                 'driver_confidence_level': final_confidence
             })
 
-        # 프레임을 RGB로 변환하고 Streamlit에 표시
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         video_placeholder.image(frame_rgb, channels="RGB")
 
-        # 차트 업데이트 주기 체크
         current_time = time.time()
         if current_time - last_update_time >= update_interval:
             if chart_data_list:
-                # 리스트를 데이터프레임으로 변환
                 new_data = pd.DataFrame(chart_data_list)
-                # 기존 차트 데이터에 추가
                 if 'chart_data_full' not in st.session_state:
+
                     st.session_state['chart_data_full'] = new_data
                 else:
                     st.session_state['chart_data_full'] = pd.concat([st.session_state['chart_data_full'], new_data], ignore_index=True)
-                # 차트 업데이트
                 chart_placeholder.line_chart(st.session_state['chart_data_full'].set_index('time_seconds'))
-                # 리스트 초기화
                 chart_data_list = []
                 st.session_state['last_update_time'] = current_time
 
-        # CPU 사용량 줄이기 위해 잠시 대기
+        # Reduce CPU usage
         time.sleep(0.03)
 
-    # 웹캠 릴리스 및 윈도우 닫기
     cap.release()
     cv2.destroyAllWindows()
 
-    # 실시간 분석이 중지되었을 때 차트를 저장
     if not st.session_state['real_time_running']:
         output_dir = 'outputs'
         os.makedirs(output_dir, exist_ok=True)
         timestamp = int(time.time())
         chart_file_path = os.path.join(output_dir, f'real_time_chart_{timestamp}.png')
 
-        # matplotlib를 사용하여 최종 차트 플롯
         if 'chart_data_full' in st.session_state and not st.session_state['chart_data_full'].empty:
             plt.figure(figsize=(12, 6))
             plt.plot(st.session_state['chart_data_full']['time_seconds'], st.session_state['chart_data_full']['driver_confidence_level'], marker='o', label='Final Confidence Level')
@@ -246,7 +268,7 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
-            plt.savefig(chart_file_path)  # 차트를 PNG 파일로 저장
+            plt.savefig(chart_file_path)
             plt.close()
 
             st.success(f"Real-time analysis stopped. Chart saved to {chart_file_path}.")
@@ -255,15 +277,13 @@ def real_time_emotion_analysis_streamlit(video_placeholder, chart_placeholder):
 
 def main():
     """
-    Streamlit 애플리케이션의 메인 함수입니다.
+    Main function to initialize the Streamlit application.
     """
-    st.title("실시간 운전자 자신감 측정기")
+    st.title("Real-Time Driver Confidence Measurement")
 
-    # 비디오 및 차트 플레이스홀더 생성
     video_placeholder = st.empty()
     chart_placeholder = st.empty()
 
-    # 시작/정지 버튼
     if 'real_time_running' not in st.session_state:
         st.session_state['real_time_running'] = False
 

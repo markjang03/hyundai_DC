@@ -1,4 +1,50 @@
-# scripts/generate_report.py
+"""
+Module: generate_report.py
+
+Description:
+This script generates a comprehensive PDF report from emotion analysis data.
+The report includes summary statistics, visualizations, and detailed insights about driver's confidence and emotions over time.
+The generated report is saved as a PDF file.
+
+Classes and Functions:
+----------------------
+1. generate_report(analysis_csv, trends_image, report_path)
+    - Generates a PDF report from emotion analysis data and trends.
+    - Parameters:
+        - analysis_csv (str): Path to the CSV file containing emotion analysis results.
+        - trends_image (str): Path to the trends image file visualizing emotion trends.
+        - report_path (str): Path to save the generated PDF report.
+    - Returns:
+        - None
+
+2. parse_arguments()
+    - Parses command-line arguments for script execution.
+    - Arguments:
+        - --analysis_csv: Path to the emotion analysis CSV file (required).
+        - --trends_image: Path to the emotion trends image file (required).
+        - --report_path: Path to save the generated PDF report (required).
+    - Returns:
+        - argparse.Namespace: Parsed arguments.
+
+3. main()
+    - Entry point of the script. Parses arguments and invokes `generate_report`.
+
+Usage:
+------
+1. Perform emotion analysis to generate the required data and trends image.
+2. Run this script to generate the report:
+    $ python generate_report.py --analysis_csv <csv_path> --trends_image <image_path> --report_path <report_path>
+
+Output:
+-------
+1. A PDF report summarizing:
+    - Emotion analysis and distribution
+    - Additional feature statistics (e.g., EAR, head tilt angle, mouth opening)
+    - Time series trends for driver confidence
+    - Original data table (truncated to 100 rows for readability)
+
+Author: Mark Jang
+"""
 
 import argparse
 import pandas as pd

@@ -1,6 +1,7 @@
-# Hyundai Driver Confidence Measure
+# Hyundai Driver Confidence Measure - FER
+Author: Mark Y. Jang
 
-Welcome to the Hyundai Driver Confidence Measure, a comprehensive tool designed to analyze driver emotions and assess confidence levels in real-time and from pre-recorded video footage. This application leverages advanced computer vision and machine learning techniques to provide insightful analytics on driver behavior and state.
+Welcome to the Hyundai Driver Confidence Measure, a tool designed to analyze driver emotions and assess confidence levels in real-time and from pre-recorded video footage. This app leverages advanced computer vision and machine learning techniques to provide insightful analytics on driver behavior and state.
 
 Table of Contents
 
@@ -9,9 +10,9 @@ Table of Contents
 	3.	Technology Stack
 	4.	Installation
 	5.	Usage
-	•	1. Video Analysis
-	•	2. Real-Time Analysis
-	•	3. Results & Report
+		1. Video Analysis
+		2. Real-Time Analysis
+		3. Results & Report
 	6.	Emotion Detection & Driver Confidence Calculation
 	•	Emotion Detection
 	•	Feature Extraction
@@ -41,7 +42,6 @@ Technology Stack
 	•	Emotion Detection: FER (Facial Emotion Recognition)
 	•	Data Processing: Pandas, NumPy
 	•	Visualization: Matplotlib
-	•	Logging: Python logging module
 
 Installation
 
@@ -52,34 +52,30 @@ Prerequisites
 
 Steps
 
-	1.	Clone the Repository:
-
-git clone https://github.com/yourusername/hyundai-driver-confidence-measurer.git
-cd hyundai-driver-confidence-measurer
+	1.	Clone the Repository: git clone https://github.com/markjang03/hyundai-driver-confidence-measurer.git
+	cd hyundai-driver-confidence-measurer
 
 
-	2.	Create a Virtual Environment:
-It’s recommended to use a virtual environment to manage dependencies.
 
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
+	2.	Create a Virtual Environment(this is not required but recommended):
+
+	python -m venv venv
+	source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 	3.	Install Dependencies:
 
-pip install -r requirements.txt
+	pip install -r requirements.txt
+OR u can do it manually
 
-If requirements.txt is not provided, install the necessary packages manually:
-
-pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm
-
+	pip install streamlit opencv-python fer mediapipe pandas numpy matplotlib tqdm
+copy and paste the line above in terminal
 
 	4.	Verify Installation:
-Ensure that all packages are installed correctly.
-
-pip list
-
-
+	pip list
+	5. 	Connect it to AWS:
+ 	create an ".env" file in the root
+	REACT_APP_AMAZON_API_BASE_URL = "YOUR AWS URL" {example: REACT_APP_AMAZON_API_BASE_URL = "https://gatechmarkyjang.execute-api.us-east-1.amazonaws.com/init"}
 
 Usage
 
@@ -87,9 +83,7 @@ Running the Streamlit Application
 
 Navigate to the project directory and run the Streamlit app:
 
-streamlit run gui/app.py
-
-This will launch the application in your default web browser.
+	streamlit run gui/app.py -> this will only run locally
 
 Application Tabs
 
@@ -114,25 +108,13 @@ Steps:
 	•	Generate a comprehensive report.
 	3.	View Results: Once analysis is complete, the final video and emotion trends will be displayed.
 
-2. Real-Time Analysis
-
-Purpose: Monitor and analyze driver emotions and confidence levels in real-time using a webcam.
-
-Steps:
-
-	1.	Start Analysis: Click the “Start Real-Time Analysis” button to begin monitoring. The application will:
-	•	Capture video frames from your webcam.
-	•	Detect emotions and extract facial features in real-time.
-	•	Display the video feed with annotated emotions and confidence levels.
-	•	Plot confidence trends over time.
-	2.	Stop Analysis: Click the “Stop Real-Time Analysis” button to end monitoring. The application will save the confidence trends chart.
+2. Real-Time Analysis (incomplete {this would run but wont save the result ima work on it soon})
 
 3. Results & Report
 
 Purpose: View analyzed data, visualizations, and download comprehensive reports.
 
 Features:
-
 	•	Analyzed Emotion Data: View a dataframe containing emotion scores and extracted features for each frame.
 	•	Emotion Trends Graph: Visual representation of driver confidence levels over time.
 	•	Emotion Distribution Graph: Distribution of detected emotions throughout the video.
@@ -157,11 +139,6 @@ In addition to emotion detection, the application extracts several facial featur
 	1.	Eye Aspect Ratio (EAR):
 	•	Purpose: Measure eye openness to detect signs of fatigue.
 	•	Calculation: Based on specific facial landmarks around the eyes, EAR is calculated using the distances between certain points.
-	•	Formula:
-￼
-Where:
-	•	￼ and ￼ are the vertical distances between eye landmarks.
-	•	￼ is the horizontal distance between eye landmarks.
 	2.	Head Tilt Angle:
 	•	Purpose: Determine the tilt of the driver’s head, which can indicate distraction or fatigue.
 	•	Calculation: Calculated using the positions of the nose tip and ear landmarks to estimate the angle of head tilt.
@@ -186,7 +163,6 @@ emotion_confidence_mapping = {
     'disgust': 0.1,
     'contempt': 0.1
 }
-
 
 	2.	Smoothed Confidence:
 	•	A moving average (window size of 5) is applied to the confidence scores to smooth out fluctuations.
@@ -232,6 +208,3 @@ Data Flow
 	6.	Visualization:
 	•	Emotion trends and distributions are visualized using Matplotlib and displayed within the Streamlit app.
 
-License
-
-This project is licensed under the MIT License.
